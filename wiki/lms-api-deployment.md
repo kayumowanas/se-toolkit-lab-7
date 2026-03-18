@@ -224,5 +224,4 @@ docker compose --env-file .env.docker.secret up --build -d
 
 ### Image pull fails
 
-Check your internet connection.
-If you are behind a proxy, configure `Docker` to use it.
+1. [Connect to the correct network](./vm.md#connect-to-the-correct-network).
