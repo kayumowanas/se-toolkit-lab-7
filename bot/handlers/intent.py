@@ -13,6 +13,9 @@ Use tools for factual questions about labs, learners, scores, groups, timelines,
 When the user greets you, replies with nonsense, or asks something ambiguous, answer directly without tools.
 If the user asks about analytics or LMS data, prefer tools over guessing.
 When you use tools, summarize the returned data clearly and concretely.
+For comparison questions, keep calling tools until you can name the specific lab, group, learner, or metric the user asked about.
+Never stop with an intermediate progress update such as "I will continue checking" or "let me check the rest".
+If tool results are already sufficient, give the final answer immediately with the relevant number or ranking.
 """.strip()
 
 
@@ -205,6 +208,7 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": text},
     ]
+    used_tools = False
 
     try:
         for _ in range(8):
@@ -216,10 +220,34 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
             if not isinstance(tool_calls, list) or not tool_calls:
                 content = assistant_message.get("content")
                 if isinstance(content, str) and content.strip():
+                    if used_tools:
+                        messages.append(
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You already have tool results. If the answer is incomplete, "
+                                    "continue calling tools. Otherwise answer finally now with a "
+                                    "specific result, not a progress update."
+                                ),
+                            }
+                        )
+                        final_response = await llm_client.create_chat_completion(
+                            messages, tools=tools
+                        )
+                        final_message = llm_client.extract_message(final_response)
+                        final_tool_calls = final_message.get("tool_calls")
+                        if isinstance(final_tool_calls, list) and final_tool_calls:
+                            messages.append(final_message)
+                            tool_calls = final_tool_calls
+                        else:
+                            final_content = final_message.get("content")
+                            if isinstance(final_content, str) and final_content.strip():
+                                return final_content.strip()
                     return content.strip()
                 return "I could not produce a useful answer. Try /help."
 
             for tool_call in tool_calls:
+                used_tools = True
                 if not isinstance(tool_call, dict):
                     continue
                 function_payload = tool_call.get("function")
