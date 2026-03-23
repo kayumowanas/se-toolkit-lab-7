@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from config import Settings
+
 from .commands import (
     handle_health,
     handle_help,
@@ -11,7 +13,7 @@ from .commands import (
 )
 
 
-async def dispatch_text(text: str) -> str:
+async def dispatch_text(text: str, settings: Settings) -> str:
     stripped = text.strip()
     if not stripped:
         return "Please enter a command or a question."
@@ -27,10 +29,10 @@ async def dispatch_text(text: str) -> str:
     if command == "/help":
         return await handle_help()
     if command == "/health":
-        return await handle_health()
+        return await handle_health(settings)
     if command == "/labs":
-        return await handle_labs()
+        return await handle_labs(settings)
     if command == "/scores":
         lab = parts[1] if len(parts) > 1 else None
-        return await handle_scores(lab)
+        return await handle_scores(lab, settings)
     return await handle_unknown(command)
