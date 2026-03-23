@@ -1,4 +1,4 @@
-from .api_client import LMSApiClient
+from .api_client import BackendError, LMSApiClient
 from .llm_client import LLMClient
 
-__all__ = ["LLMClient", "LMSApiClient"]
+__all__ = ["BackendError", "LLMClient", "LMSApiClient"]

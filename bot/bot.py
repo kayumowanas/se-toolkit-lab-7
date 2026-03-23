@@ -13,13 +13,12 @@ from handlers import dispatch_text
 
 
 async def _reply_with_handler_result(message: Message) -> None:
-    response = await dispatch_text(message.text or "")
+    response = await dispatch_text(message.text or "", load_settings())
     await message.answer(response)
 
 
 async def run_test_mode(text: str) -> int:
-    _ = load_settings()
-    response = await dispatch_text(text)
+    response = await dispatch_text(text, load_settings())
     print(response)
     return 0
 
