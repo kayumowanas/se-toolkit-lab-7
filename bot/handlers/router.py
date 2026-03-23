@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from config import Settings
+from .intent import handle_plain_text
 
 from .commands import (
     handle_health,
     handle_help,
     handle_labs,
-    handle_plain_text,
     handle_scores,
     handle_start,
     handle_unknown,
@@ -19,7 +19,7 @@ async def dispatch_text(text: str, settings: Settings) -> str:
         return "Please enter a command or a question."
 
     if not stripped.startswith("/"):
-        return await handle_plain_text(stripped)
+        return await handle_plain_text(stripped, settings)
 
     parts = stripped.split()
     command = parts[0].lower()

@@ -86,12 +86,5 @@ async def handle_scores(lab: str | None, settings: Settings) -> str:
     return "\n".join(lines)
 
 
-async def handle_plain_text(text: str) -> str:
-    return (
-        "Natural language routing is not implemented yet. "
-        f"You sent: {text}"
-    )
-
-
 async def handle_unknown(command: str) -> str:
     return f"Unknown command: {command}. Use /help."
