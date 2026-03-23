@@ -225,7 +225,7 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
     used_tools = False
 
     try:
-        for _ in range(8):
+        for _ in range(16):
             response = await llm_client.create_chat_completion(messages, tools=tools)
             assistant_message = llm_client.extract_message(response)
             messages.append(assistant_message)
@@ -323,6 +323,23 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
                         "content": json.dumps(result),
                     }
                 )
+
+        if used_tools:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "You already have all collected tool results in the conversation. "
+                        "Do not call more tools. Give a final concise answer based only on "
+                        "the available tool results."
+                    ),
+                }
+            )
+            final_response = await llm_client.create_chat_completion(messages, tools=None)
+            final_message = llm_client.extract_message(final_response)
+            final_content = final_message.get("content")
+            if isinstance(final_content, str) and final_content.strip():
+                return final_content.strip()
 
         return "I could not finish the reasoning loop. Try a more specific question."
     except BackendError as exc:
