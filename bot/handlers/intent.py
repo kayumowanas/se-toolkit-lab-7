@@ -238,7 +238,34 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
                         final_tool_calls = final_message.get("tool_calls")
                         if isinstance(final_tool_calls, list) and final_tool_calls:
                             messages.append(final_message)
-                            tool_calls = final_tool_calls
+                            for tool_call in final_tool_calls:
+                                used_tools = True
+                                if not isinstance(tool_call, dict):
+                                    continue
+                                function_payload = tool_call.get("function")
+                                if not isinstance(function_payload, dict):
+                                    continue
+
+                                tool_name = str(function_payload.get("name", ""))
+                                arguments = llm_client.tool_call_arguments(tool_call)
+                                print(
+                                    f"[tool] LLM called: {tool_name}({json.dumps(arguments)})",
+                                    file=sys.stderr,
+                                )
+                                result = await _run_tool(api_client, tool_name, arguments)
+                                print(
+                                    f"[tool] Result: {_preview_result(result)}",
+                                    file=sys.stderr,
+                                )
+                                messages.append(
+                                    {
+                                        "role": "tool",
+                                        "tool_call_id": tool_call.get("id", ""),
+                                        "name": tool_name,
+                                        "content": json.dumps(result),
+                                    }
+                                )
+                            continue
                         else:
                             final_content = final_message.get("content")
                             if isinstance(final_content, str) and final_content.strip():
