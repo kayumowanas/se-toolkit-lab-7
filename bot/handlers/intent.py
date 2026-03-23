@@ -200,6 +200,20 @@ def _preview_result(result: dict[str, object] | list[dict[str, object]]) -> str:
     return ", ".join(f"{key}={value}" for key, value in list(result.items())[:3])
 
 
+def _looks_incomplete(content: str) -> bool:
+    lowered = content.lower()
+    markers = [
+        "let me check",
+        "let me continue",
+        "i will continue",
+        "checking the remaining",
+        "continue checking",
+        "i'll check",
+        "i need to check",
+    ]
+    return any(marker in lowered for marker in markers)
+
+
 async def handle_plain_text(text: str, settings: Settings) -> str:
     llm_client = _build_llm_client(settings)
     api_client = _build_api_client(settings)
@@ -220,13 +234,26 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
             if not isinstance(tool_calls, list) or not tool_calls:
                 content = assistant_message.get("content")
                 if isinstance(content, str) and content.strip():
+                    if used_tools and _looks_incomplete(content):
+                        messages.append(
+                            {
+                                "role": "system",
+                                "content": (
+                                    "Your previous answer was only a progress update. "
+                                    "Do not send progress updates to the user. Continue calling "
+                                    "tools for the remaining data you need, then give one final "
+                                    "answer with a specific lab, group, learner, or metric."
+                                ),
+                            }
+                        )
+                        continue
                     if used_tools:
                         messages.append(
                             {
                                 "role": "system",
                                 "content": (
-                                    "You already have tool results. If the answer is incomplete, "
-                                    "continue calling tools. Otherwise answer finally now with a "
+                                    "You already have tool results. If more data is needed, "
+                                    "call more tools. Otherwise answer finally now with a "
                                     "specific result, not a progress update."
                                 ),
                             }
@@ -266,10 +293,9 @@ async def handle_plain_text(text: str, settings: Settings) -> str:
                                     }
                                 )
                             continue
-                        else:
-                            final_content = final_message.get("content")
-                            if isinstance(final_content, str) and final_content.strip():
-                                return final_content.strip()
+                        final_content = final_message.get("content")
+                        if isinstance(final_content, str) and final_content.strip():
+                            return final_content.strip()
                     return content.strip()
                 return "I could not produce a useful answer. Try /help."
 
