@@ -95,3 +95,24 @@ By the end of this lab, you should be able to say:
 ### Optional
 
 1. [Flutter Web Chatbot](./lab/tasks/optional/task-1.md)
+
+## Deploy
+
+To run the full stack on your VM with Docker, fill in `.env.docker.secret` with at least `BOT_TOKEN`, `LMS_API_KEY`, `LLM_API_KEY`, and `LLM_API_MODEL`. The bot container uses `http://backend:8000` for the LMS API inside Docker and `http://host.docker.internal:42005/v1` for the Qwen Code API running on the VM host.
+
+Build and start everything:
+
+```terminal
+docker compose --env-file .env.docker.secret up --build -d
+docker compose --env-file .env.docker.secret ps
+```
+
+Verify the backend and bot:
+
+```terminal
+curl -sf http://localhost:42002/docs >/dev/null && echo "backend ok"
+docker compose --env-file .env.docker.secret ps bot
+docker compose --env-file .env.docker.secret logs bot --tail 20
+```
+
+Then open Telegram and verify `/start`, `/health`, and a natural-language query such as `what labs are available?`.
